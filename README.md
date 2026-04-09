@@ -1,2 +1,1 @@
-# terraform-infragraph-aws-connector-module
-
+# Terraform Infragraph AWS Connector Module
