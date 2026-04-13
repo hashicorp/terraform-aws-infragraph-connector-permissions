@@ -1,3 +1,6 @@
+# Copyright IBM Corp. 2026
+# SPDX-License-Identifier: MPL-2.0
+
 locals {
   aws_iam_resource_access_policy_name = "${trimsuffix(var.aws_iam_role_name, "-role")}-resource-policy"
   aws_iam_assume_role_policy_name     = "${trimsuffix(var.aws_iam_role_name, "-role")}-assume-role-policy"
