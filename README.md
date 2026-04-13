@@ -22,24 +22,30 @@ module "infragraph_aws_connector" {
 
 After `terraform apply`, use the exported `role_arn` or `role_name` when configuring the AWS connector in HCP Infragraph.
 
-## Optional Configuration
+## Optional Naming Configuration
 
-You can keep the default policy set, or remove specific permission groups with `disabled_permission_sets`.
+You can override `aws_iam_role_name`. The module derives both IAM policy names from that value by trimming a trailing `-role` and appending the policy-specific suffix.
 
 ```hcl
 module "infragraph_aws_connector" {
   source = "git::https://github.com/hashicorp/terraform-infragraph-aws-connector-module.git"
 
-  oidc_provider_url = "https://<your-hcp-oidc-provider-url>"
-
-  disabled_permission_sets = [
-    "iam",
-    "s3",
-  ]
+  oidc_provider_url   = "https://<your-hcp-oidc-provider-url>"
+  aws_iam_role_name   = "my-team-infragraph-role"
 }
 ```
 
-Available permission-set names:
+This produces:
+
+- IAM role: `my-team-infragraph-role`
+- Resource access policy: `my-team-infragraph-resource-policy`
+- Assume-role policy: `my-team-infragraph-assume-role-policy`
+
+If `aws_iam_role_name` does not end with `-role`, the full value is used as-is before `-resource-policy` or `-assume-role-policy` is appended.
+
+## Installed AWS Permission Groups
+
+The generated resource access policy includes these permission groups:
 
 - `account`
 - `autoscaling`
@@ -63,10 +69,7 @@ Available permission-set names:
 ## Inputs
 
 - `oidc_provider_url`: Required. HCP OIDC provider URL for your organization.
-- `aws_iam_role_name`: Optional. Defaults to `hcp_infragraph-role`.
-- `aws_iam_resource_access_policy_name`: Optional. Defaults to `hcp_infragraph-resource-policy`.
-- `aws_iam_assume_role_policy_name`: Optional. Defaults to `hcp_infragraph-assume-role-policy`.
-- `disabled_permission_sets`: Optional set of permission-set names to exclude from the generated resource access policy.
+- `aws_iam_role_name`: Optional. Defaults to `hcp_infragraph-role`. The module derives `aws_iam_resource_access_policy_name` and `aws_iam_assume_role_policy_name` from this value by trimming a trailing `-role` and appending `-resource-policy` and `-assume-role-policy`.
 
 ## Outputs
 
@@ -78,8 +81,9 @@ Available permission-set names:
 The source of truth for the installed AWS resource permissions is `locals.tf`.
 
 - `local.permission_sets` contains the action lists, grouped by AWS service or feature area.
-- `local.enabled_actions` flattens those groups into the final action list, excluding anything named in `disabled_permission_sets`.
-- `main.tf` uses that action list to build and attach the AWS resource access policy.
+- `local.enabled_actions` flattens those groups into the final action list.
+- `local.aws_iam_resource_access_policy_name` and `local.aws_iam_assume_role_policy_name` derive policy names from `aws_iam_role_name`.
+- `main.tf` uses those locals to build and attach the AWS policies.
 
 The module also attaches one additional policy from `main.tf` that grants:
 

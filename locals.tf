@@ -1,4 +1,7 @@
 locals {
+  aws_iam_resource_access_policy_name = "${trimsuffix(var.aws_iam_role_name, "-role")}-resource-policy"
+  aws_iam_assume_role_policy_name     = "${trimsuffix(var.aws_iam_role_name, "-role")}-assume-role-policy"
+
   permission_sets = {
     account = [
       "account:GetAccountInformation",
@@ -108,6 +111,5 @@ locals {
 
   enabled_actions = distinct(flatten([
     for permission_set_name in sort(keys(local.permission_sets)) : local.permission_sets[permission_set_name]
-    if !contains(var.disabled_permission_sets, permission_set_name)
   ]))
 }
