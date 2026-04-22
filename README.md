@@ -14,7 +14,7 @@ This module creates the AWS IAM resources needed for HCP Infragraph to authentic
 
 ```hcl
 module "infragraph_aws_connector" {
-  source = "git::https://github.com/hashicorp/terraform-infragraph-aws-connector-module.git"
+  source = "hashicorp/infragraph-aws-connector-module/aws"
 
   oidc_provider_url = "https://<your-hcp-oidc-provider-url>"
 }
@@ -28,7 +28,7 @@ You can override `aws_iam_role_name`. The module derives both IAM policy names f
 
 ```hcl
 module "infragraph_aws_connector" {
-  source = "git::https://github.com/hashicorp/terraform-infragraph-aws-connector-module.git"
+  source = "hashicorp/infragraph-aws-connector-module/aws"
 
   oidc_provider_url   = "https://<your-hcp-oidc-provider-url>"
   aws_iam_role_name   = "my-team-infragraph-role"
