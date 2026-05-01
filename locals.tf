@@ -28,6 +28,7 @@ locals {
       "ec2:DescribeInstances",
       "ec2:DescribeLaunchTemplates",
       "ec2:DescribeInstanceTypes",
+      "ec2:DescribeNetworkAcls",
       "ec2:DescribeNetworkInterfaces",
       "ec2:DescribeRegions",
       "ec2:DescribeRouteTables",
@@ -62,10 +63,31 @@ locals {
     s3 = [
       "s3:ListAllMyBuckets",
       "s3:GetBucketPublicAccessBlock",
+      "s3:GetAccelerateConfiguration",
+      "s3:GetAnalyticsConfiguration",
+      "s3:GetBucketAbac",
+      "s3:GetBucketCORS",
+      "s3:GetBucketLogging",
+      "s3:GetBucketMetadataTableConfiguration",
+      "s3:GetBucketNotification",
+      "s3:GetBucketObjectLockConfiguration",
+      "s3:GetBucketOwnershipControls",
+      "s3:GetBucketTagging",
+      "s3:GetBucketVersioning",
+      "s3:GetBucketWebsite",
+      "s3:GetEncryptionConfiguration",
+      "s3:GetIntelligentTieringConfiguration",
+      "s3:GetInventoryConfiguration",
+      "s3:GetLifecycleConfiguration",
+      "s3:GetMetricsConfiguration",
+      "s3:GetReplicationConfiguration",
+      "s3:ListBucket",
+      "s3:ListTagsForResource",
     ]
     sqs = [
       "sqs:ListQueues",
       "sqs:GetQueueAttributes",
+      "sqs:ListQueueTags",
     ]
     eks = [
       "eks:ListClusters",
@@ -76,6 +98,9 @@ locals {
       "sns:GetTopicAttributes",
       "sns:ListSubscriptions",
       "sns:GetSubscriptionAttributes",
+      "sns:GetDataProtectionPolicy",
+      "sns:ListSubscriptionsByTopic",
+      "sns:ListTagsForResource",
     ]
     route53 = [
       "route53:GetHostedZone",
@@ -91,11 +116,15 @@ locals {
     dynamodb = [
       "dynamodb:ListTables",
       "dynamodb:DescribeTable",
+      "dynamodb:DescribeContinuousBackups",
+      "dynamodb:DescribeContributorInsights",
+      "dynamodb:DescribeKinesisStreamingDestination",
+      "dynamodb:DescribeTimeToLive",
+      "dynamodb:GetResourcePolicy",
+      "dynamodb:ListTagsOfResource",
     ]
     autoscaling = [
-      "autoscaling:DescribeAutoScalingGroups",
-      "autoscaling:DescribeLifecycleHooks",
-      "autoscaling:DescribeNotificationConfigurations",
+      "autoscaling:Describe*",
     ]
     elasticfilesystem = [
       "elasticfilesystem:DescribeFileSystems",
@@ -109,6 +138,11 @@ locals {
     elasticloadbalancing = [
       "elasticloadbalancing:DescribeLoadBalancers",
       "elasticloadbalancing:DescribeLoadBalancerAttributes",
+      "elasticloadbalancing:DescribeCapacityReservation",
+      "elasticloadbalancing:DescribeTags",
+    ]
+    managed-fleets = [
+      "managed-fleets:Get*",
     ]
   }
 

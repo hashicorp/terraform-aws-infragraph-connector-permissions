@@ -59,6 +59,7 @@ The generated resource access policy includes these permission groups:
 - `elasticloadbalancing`
 - `iam`
 - `lambda`
+- `managed-fleets`
 - `rds`
 - `route53`
 - `s3`
