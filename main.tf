@@ -33,6 +33,21 @@ data "aws_iam_policy_document" "hcp_infragraph_oidc_assume_role_policy" {
       type        = "Federated"
       identifiers = [aws_iam_openid_connect_provider.hcp_infragraph.arn]
     }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_condition_prefix}:aud"
+      values   = ["graph.connector.aws"]
+    }
+
+    dynamic "condition" {
+      for_each = var.hcp_infragraph_subject == "" ? [] : [1]
+      content {
+        test     = "StringEquals"
+        variable = "${local.oidc_condition_prefix}:sub"
+        values   = [var.hcp_infragraph_subject]
+      }
+    }
   }
 }
 
@@ -53,23 +68,4 @@ resource "aws_iam_policy" "hcp_infragraph_resource_access_policy" {
 resource "aws_iam_role_policy_attachment" "hcp_infragraph_access_resources_policy_attachment" {
   role       = aws_iam_role.hcp_infragraph_role.name
   policy_arn = aws_iam_policy.hcp_infragraph_resource_access_policy.arn
-}
-
-data "aws_iam_policy_document" "hcp_infragraph_assumerole_policy" {
-  statement {
-    effect    = "Allow"
-    actions   = ["sts:AssumeRoleWithWebIdentity"]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "hcp_infragraph_assumerole_policy" {
-  name        = local.aws_iam_assume_role_policy_name
-  description = "A policy that allows infragraph to call sts:AssumeRoleWithWebIdentity"
-  policy      = data.aws_iam_policy_document.hcp_infragraph_assumerole_policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "hcp_infragraph_assume_policy_attachment" {
-  role       = aws_iam_role.hcp_infragraph_role.name
-  policy_arn = aws_iam_policy.hcp_infragraph_assumerole_policy.arn
 }

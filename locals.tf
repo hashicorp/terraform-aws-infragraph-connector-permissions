@@ -3,7 +3,10 @@
 
 locals {
   aws_iam_resource_access_policy_name = "${trimsuffix(var.aws_iam_role_name, "-role")}-resource-policy"
-  aws_iam_assume_role_policy_name     = "${trimsuffix(var.aws_iam_role_name, "-role")}-assume-role-policy"
+
+  # IAM OIDC condition keys are prefixed by the issuer identifier: the provider URL
+  # with the scheme and any trailing slash removed, including any path component.
+  oidc_condition_prefix = trimsuffix(trimprefix(var.oidc_provider_url, "https://"), "/")
 
   permission_sets = {
     account = [

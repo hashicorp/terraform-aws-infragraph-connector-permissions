@@ -46,6 +46,7 @@ override_resource {
 
   values = {
     arn = "arn:aws:iam::123456789012:oidc-provider/app.terraform.io"
+    id  = "arn:aws:iam::123456789012:oidc-provider/app.terraform.io"
   }
 }
 
@@ -78,11 +79,6 @@ run "default_configuration" {
   }
 
   assert {
-    condition     = aws_iam_policy.hcp_infragraph_assumerole_policy.name == "hcp_infragraph-assume-role-policy"
-    error_message = "assume-role policy name should trim the trailing -role suffix"
-  }
-
-  assert {
     condition     = aws_iam_openid_connect_provider.hcp_infragraph.url == var.oidc_provider_url
     error_message = "OIDC provider URL should come from the module input"
   }
@@ -101,15 +97,68 @@ run "default_configuration" {
     condition     = sort(tolist(jsondecode(data.aws_iam_policy_document.hcp_infragraph_resource_access_policy.json).Statement[0].Action)) == sort(tolist(jsondecode(file("${path.root}/tests/fixtures/enabled_actions.json"))))
     error_message = "resource access policy actions changed unexpectedly"
   }
+}
 
-  assert {
-    condition     = jsondecode(data.aws_iam_policy_document.hcp_infragraph_assumerole_policy.json).Statement[0].Action == "sts:AssumeRoleWithWebIdentity"
-    error_message = "assume-role helper policy should grant sts:AssumeRoleWithWebIdentity"
+# The OIDC trust policy document depends on the OIDC provider resource, so its
+# rendered JSON is only known after apply. These runs override every managed
+# resource to keep apply offline and then assert on the trust conditions.
+run "omits_subject_condition_by_default" {
+  command   = apply
+  state_key = "omits_subject_condition_by_default"
+
+  override_resource {
+    target = aws_iam_role.hcp_infragraph_role
+  }
+  override_resource {
+    target = aws_iam_policy.hcp_infragraph_resource_access_policy
+    values = {
+      arn = "arn:aws:iam::123456789012:policy/hcp_infragraph-resource-policy"
+    }
+  }
+  override_resource {
+    target = aws_iam_role_policy_attachment.hcp_infragraph_access_resources_policy_attachment
   }
 
   assert {
-    condition     = jsondecode(data.aws_iam_policy_document.hcp_infragraph_assumerole_policy.json).Statement[0].Resource == "*"
-    error_message = "assume-role helper policy should target all resources"
+    condition     = jsondecode(data.aws_iam_policy_document.hcp_infragraph_oidc_assume_role_policy.json).Statement[0].Condition.StringEquals["example.com:aud"] == "graph.connector.aws"
+    error_message = "assume-role trust policy should always pin the aud claim to graph.connector.aws"
+  }
+
+  assert {
+    condition     = lookup(jsondecode(data.aws_iam_policy_document.hcp_infragraph_oidc_assume_role_policy.json).Statement[0].Condition.StringEquals, "example.com:sub", null) == null
+    error_message = "sub condition should be absent when hcp_infragraph_subject is left empty"
+  }
+}
+
+run "pins_subject_when_provided" {
+  command   = apply
+  state_key = "pins_subject_when_provided"
+
+  variables {
+    hcp_infragraph_subject = "project:n/a:geo:geo:service:infragraph:type:integration:name:infragraph"
+  }
+
+  override_resource {
+    target = aws_iam_role.hcp_infragraph_role
+  }
+  override_resource {
+    target = aws_iam_policy.hcp_infragraph_resource_access_policy
+    values = {
+      arn = "arn:aws:iam::123456789012:policy/hcp_infragraph-resource-policy"
+    }
+  }
+  override_resource {
+    target = aws_iam_role_policy_attachment.hcp_infragraph_access_resources_policy_attachment
+  }
+
+  assert {
+    condition     = jsondecode(data.aws_iam_policy_document.hcp_infragraph_oidc_assume_role_policy.json).Statement[0].Condition.StringEquals["example.com:sub"] == "project:n/a:geo:geo:service:infragraph:type:integration:name:infragraph"
+    error_message = "assume-role trust policy should pin the sub claim with StringEquals when hcp_infragraph_subject is set"
+  }
+
+  assert {
+    condition     = jsondecode(data.aws_iam_policy_document.hcp_infragraph_oidc_assume_role_policy.json).Statement[0].Condition.StringEquals["example.com:aud"] == "graph.connector.aws"
+    error_message = "aud pin should remain in place when a subject is also pinned"
   }
 }
 
@@ -130,11 +179,6 @@ run "custom_role_name_with_suffix" {
     condition     = aws_iam_policy.hcp_infragraph_resource_access_policy.name == "my-team-infragraph-resource-policy"
     error_message = "resource policy name should trim the custom trailing -role suffix"
   }
-
-  assert {
-    condition     = aws_iam_policy.hcp_infragraph_assumerole_policy.name == "my-team-infragraph-assume-role-policy"
-    error_message = "assume-role policy name should trim the custom trailing -role suffix"
-  }
 }
 
 run "custom_role_name_without_suffix" {
@@ -153,10 +197,5 @@ run "custom_role_name_without_suffix" {
   assert {
     condition     = aws_iam_policy.hcp_infragraph_resource_access_policy.name == "my-team-infragraph-resource-policy"
     error_message = "resource policy name should preserve custom names without -role"
-  }
-
-  assert {
-    condition     = aws_iam_policy.hcp_infragraph_assumerole_policy.name == "my-team-infragraph-assume-role-policy"
-    error_message = "assume-role policy name should preserve custom names without -role"
   }
 }

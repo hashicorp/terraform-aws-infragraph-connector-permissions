@@ -7,8 +7,7 @@ This module creates the AWS IAM resources needed for HCP Infragraph to authentic
 - An `aws_iam_openid_connect_provider` for the HCP Infragraph OIDC issuer
 - An `aws_iam_role` trusted by that OIDC provider
 - A resource access policy built from the recommended AWS permission sets in `locals.tf`
-- An additional policy granting `sts:AssumeRoleWithWebIdentity`
-- Policy attachments that attach both policies to the role
+- A policy attachment that attaches the resource access policy to the role
 
 ## Usage
 
@@ -24,7 +23,7 @@ After `terraform apply`, use the exported `role_arn` or `role_name` when configu
 
 ## Optional Naming Configuration
 
-You can override `aws_iam_role_name`. The module derives both IAM policy names from that value by trimming a trailing `-role` and appending the policy-specific suffix.
+You can override `aws_iam_role_name`. The module derives the IAM policy name from that value by trimming a trailing `-role` and appending the policy-specific suffix.
 
 ```hcl
 module "infragraph_aws_connector" {
@@ -39,9 +38,8 @@ This produces:
 
 - IAM role: `my-team-infragraph-role`
 - Resource access policy: `my-team-infragraph-resource-policy`
-- Assume-role policy: `my-team-infragraph-assume-role-policy`
 
-If `aws_iam_role_name` does not end with `-role`, the full value is used as-is before `-resource-policy` or `-assume-role-policy` is appended.
+If `aws_iam_role_name` does not end with `-role`, the full value is used as-is before `-resource-policy` is appended.
 
 ## Installed AWS Permission Groups
 
@@ -70,7 +68,8 @@ The generated resource access policy includes these permission groups:
 ## Inputs
 
 - `oidc_provider_url`: Required. HCP OIDC provider URL for your organization.
-- `aws_iam_role_name`: Optional. Defaults to `hcp_infragraph-role`. The module derives `aws_iam_resource_access_policy_name` and `aws_iam_assume_role_policy_name` from this value by trimming a trailing `-role` and appending `-resource-policy` and `-assume-role-policy`.
+- `aws_iam_role_name`: Optional. Defaults to `hcp_infragraph-role`. The module derives `aws_iam_resource_access_policy_name` from this value by trimming a trailing `-role` and appending `-resource-policy`.
+- `hcp_infragraph_subject`: Optional. Exact OIDC `sub` claim value the assumed token must match, enforced with `StringEquals` in the role trust policy. Pin this to the HCP Infragraph connector workload identity to isolate the role from any other workload sharing the same OIDC issuer and audience within your HCP organization. Leave empty to skip the `sub` condition.
 
 ## Outputs
 
@@ -83,11 +82,9 @@ The source of truth for the installed AWS resource permissions is `locals.tf`.
 
 - `local.permission_sets` contains the action lists, grouped by AWS service or feature area.
 - `local.enabled_actions` flattens those groups into the final action list.
-- `local.aws_iam_resource_access_policy_name` and `local.aws_iam_assume_role_policy_name` derive policy names from `aws_iam_role_name`.
-- `main.tf` uses those locals to build and attach the AWS policies.
+- `local.aws_iam_resource_access_policy_name` derives the policy name from `aws_iam_role_name`.
+- `main.tf` uses those locals to build and attach the resource access policy.
 
-The module also attaches one additional policy from `main.tf` that grants:
-
-- `sts:AssumeRoleWithWebIdentity`
+The role itself is assumed via `sts:AssumeRoleWithWebIdentity`, governed by the OIDC trust policy on `main.tf`. That assumption is authorized entirely by the role trust policy and OIDC token validation, so no identity policy granting that action is required or created.
 
 If you need the exact AWS actions this module installs, open `locals.tf` and review `local.permission_sets`.
