@@ -147,6 +147,10 @@ locals {
     managed-fleets = [
       "managed-fleets:Get*",
     ]
+    organizations = [
+      "organizations:ListAccounts",
+      "organizations:ListPolicies",
+    ]
   }
 
   enabled_actions = distinct(flatten([
